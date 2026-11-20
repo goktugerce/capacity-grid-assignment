@@ -114,3 +114,30 @@ left unfinished. Append as you go; a line or two per entry is right.
 - Checked: search "lindq" gives 9 people, sort flips the order, "zzzz" gives an empty state,
   Load more to 500 then scrolling keeps about 40 rows mounted.
 - Still to do: styling.
+
+## Styling
+
+- Plain CSS with tokens, no Tailwind or component library. shadcn would have meant Tailwind,
+  a path alias and about eight packages for one table, an input and a few buttons.
+- Light theme only. Colours borrowed from Toggl's site (cream page, plum text, violet and pink
+  for actions). Over-allocation stays red: pink is their action colour and would read as
+  "click me".
+- Each week cell has a thin bar for the share of weekly hours in use. It is drawing only and
+  is 0 when capacity is 0. Whether a week is over is still `allocated > weeklyHours`.
+- A failed save used to add a second line to the row, which made rows jump and broke the fixed
+  row height the virtualiser relies on. Now it is one line in the hours cell: "Not saved",
+  Retry, Discard. The reason and the value it rolled back to are in the tooltip and are what
+  a screen reader reads out.
+- "Load more" is gone. The next page loads when you scroll within 10 rows of the end. If that
+  fetch fails, a "Load more" link comes back so it is not retried in a loop.
+- Hours inputs are no longer disabled while the next page loads. That fetch only brings
+  people who are not on screen yet, so it cannot overwrite an edit. Any other fetch still
+  locks editing.
+- Caught while scrolling: the name column resized to the longest visible name as rows came
+  and went. Name and week columns are fixed width now, long names get an ellipsis and a
+  tooltip.
+- Checked: 44px rows throughout, pages load on scroll (50 to 350), failed save and an
+  out-of-range value both stay on one line. Not checked: a phone-width screen.
+- Open items if there is time: per-project breakdown for a person (a
+  `GET /api/people/{id}/allocations?from=&to=` loaded when a row is expanded, so the main
+  payload does not grow by the number of projects), and a filter for people over capacity.
