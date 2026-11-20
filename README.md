@@ -104,3 +104,34 @@ We spend about ten minutes per submission, on:
 Then we talk about it for an hour, live, and extend it together. Come ready to explain
 what you decided and why — that conversation is the real point of this exercise, and it's
 much easier when the notes are honest about what you didn't get to.
+
+---
+
+## Submission screenshots
+
+Added with the submission. Everything above this line is the original brief, unchanged.
+All five are the default range (29 Dec 2025 to 16 Jan 2026) on the seed data.
+
+**The grid as it loads.** Dee is 5h over and Eli is 20h over. Ana and Dee at exactly
+40 of 40 are not marked.
+
+![Capacity grid, default range](screenshots/01-default.jpg)
+
+**Project breakdown.** Opening a person shows their hours per project. Dee's 45h is
+Atlas 30 + Corvus 15.
+
+![Expanded rows showing hours per project](screenshots/02-project-breakdown.jpg)
+
+**Over capacity only.** Filtered on the server, so it covers the whole team and not only
+the rows that are loaded.
+
+![Grid filtered to the 41 people over capacity](screenshots/03-over-capacity-only.jpg)
+
+**A failed save.** The API was stopped for this one. Capacity stays at the old value, the
+input keeps what was typed, and the row offers Retry and Discard.
+
+![A failed save on Ana's row with Retry and Discard](screenshots/04-failed-save.jpg)
+
+**Search.** Runs on the server, across everyone.
+
+![Grid filtered to people matching "lindq"](screenshots/05-search.jpg)
