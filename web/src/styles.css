@@ -306,6 +306,61 @@ input::placeholder {
   background-color: #fdf7fe;
 }
 
+/* Project breakdown under an expanded person */
+
+.expand {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0 0.35rem 0 -0.35rem;
+  padding: 0;
+  vertical-align: middle;
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.expand:hover {
+  color: var(--plum);
+  background: var(--pink-wash);
+}
+
+.grid .project-row > * {
+  height: 36px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--ink);
+  background-color: var(--surface-sunk);
+  background-image: none;
+}
+
+.grid .project-row .sticky-col {
+  padding-left: 2.6rem;
+  color: var(--ink);
+}
+
+.grid .project-note {
+  padding-left: 2.6rem;
+  color: var(--ink-muted);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 550;
+  color: var(--plum);
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 1rem;
+  height: 1rem;
+}
+
 .sort {
   display: inline-flex;
   align-items: center;
@@ -345,8 +400,8 @@ input::placeholder {
   color: var(--ink-muted);
 }
 
-.grid td.over,
-.grid tbody tr:hover > td.over {
+.grid .person > tr:first-child > td.over,
+.grid .person > tr:first-child:hover > td.over {
   color: var(--over-fg);
   background-color: var(--over-bg);
   background-image: linear-gradient(var(--over-bar), var(--over-bar));

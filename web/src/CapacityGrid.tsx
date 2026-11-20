@@ -24,8 +24,11 @@ const weekLabel = new Intl.DateTimeFormat(undefined, {
 export function CapacityGrid({ from, to }: Props) {
   const [searchInput, setSearchInput] = useState('')
   const [nameDescending, setNameDescending] = useState(false)
+  const [overOnly, setOverOnly] = useState(false)
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<number>>(new Set())
   const search = useDebouncedValue(searchInput.trim(), SEARCH_DELAY_MS)
-  const capacity = useCapacity({ from, to }, { search, nameDescending })
+  const range = { from, to }
+  const capacity = useCapacity(range, { search, nameDescending, overOnly })
 
   const pages = capacity.data?.pages ?? []
   const weeks = pages[0]?.weeks ?? []
@@ -51,19 +54,33 @@ export function CapacityGrid({ from, to }: Props) {
     if (nearEnd && hasNextPage && !isFetching && !isFetchNextPageError) void fetchNextPage()
   }, [nearEnd, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage])
 
-  const overCount = people.filter((p) =>
-    p.allocated.some((hours) => isOver(hours, p.weeklyHours)),
-  ).length
+  function toggleExpanded(personId: number) {
+    setExpandedIds((current) => {
+      const next = new Set(current)
+      if (!next.delete(personId)) next.add(personId)
+      return next
+    })
+  }
+
   const stale = capacity.isPlaceholderData
   const columnCount = weeks.length + 2
   // A next-page fetch only brings people who are not on screen yet, so it
   // cannot overwrite an edit. Every other fetch can, so editing waits for it.
   const editingLocked = isFetching && !capacity.isFetchingNextPage
 
-  let summary = `of ${people.length} shown`
+  // With the filter on, the server has already counted everyone who is over.
+  // Without it, only the loaded rows are known.
+  const overCount = overOnly
+    ? total
+    : people.filter((p) => p.allocated.some((hours) => isOver(hours, p.weeklyHours))).length
+
+  let summary = overOnly ? 'across the team' : `of ${people.length} shown`
   if (!capacity.data) summary = capacity.isError ? '' : 'Loading capacity…'
   else if (stale) summary = 'Loading…'
-  else if (people.length === 0) summary = search ? `No one matches “${search}”.` : 'No people yet.'
+  else if (people.length === 0) {
+    if (search) summary = `No one matches “${search}”.`
+    else summary = overOnly ? 'No one is over capacity in these weeks.' : 'No people yet.'
+  }
   const showOverCount = capacity.data && !stale && people.length > 0
 
   return (
@@ -78,6 +95,14 @@ export function CapacityGrid({ from, to }: Props) {
           maxLength={100}
           onChange={(e) => setSearchInput(e.target.value)}
         />
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={overOnly}
+            onChange={(e) => setOverOnly(e.target.checked)}
+          />
+          Over capacity only
+        </label>
         <p className="summary" role="status">
           {showOverCount && (
             <strong className={overCount > 0 ? 'badge over' : 'badge'}>
@@ -125,32 +150,40 @@ export function CapacityGrid({ from, to }: Props) {
               ))}
             </tr>
           </thead>
-          <tbody>
-            {spaceAbove > 0 && (
-              <tr aria-hidden="true" className="spacer">
+          {spaceAbove > 0 && (
+            <tbody aria-hidden="true" className="spacer">
+              <tr>
                 <td colSpan={columnCount} style={{ height: spaceAbove }} />
               </tr>
-            )}
-            {rows.map((row) => (
+            </tbody>
+          )}
+          {rows.map((row) => {
+            const person = people[row.index]
+            return (
               <PersonRow
                 key={row.key}
                 index={row.index}
                 measureRef={virtualizer.measureElement}
-                person={people[row.index]}
+                person={person}
                 weeks={weeks}
+                range={range}
                 disabled={editingLocked}
+                expanded={expandedIds.has(person.id)}
+                onToggle={toggleExpanded}
               />
-            ))}
-            {spaceBelow > 0 && (
-              <tr aria-hidden="true" className="spacer">
+            )
+          })}
+          {spaceBelow > 0 && (
+            <tbody aria-hidden="true" className="spacer">
+              <tr>
                 <td colSpan={columnCount} style={{ height: spaceBelow }} />
               </tr>
-            )}
-          </tbody>
+            </tbody>
+          )}
         </table>
       </div>
       <p className="paging" hidden={!capacity.data}>
-        Showing {people.length} of {total} people.
+        Showing {people.length} of {total} {overOnly ? 'people over capacity' : 'people'}.
         {capacity.isFetchingNextPage && ' Loading more…'}
         {isFetchNextPageError && (
           <button type="button" className="link" onClick={() => fetchNextPage()}>

@@ -1,6 +1,6 @@
 import { type CSSProperties, useState } from 'react'
 import { useSaveWeeklyHours } from '../hooks/useCapacity'
-import type { PersonCapacity } from '../types'
+import type { DateRange, PersonCapacity } from '../types'
 import {
   MAX_WEEKLY_HOURS,
   formatHours,
@@ -8,16 +8,32 @@ import {
   loadPercent,
   parseWeeklyHours,
 } from '../utils/capacity'
+import { Icon } from './Icon'
+import { ProjectRows } from './ProjectRows'
 
 type Props = {
   person: PersonCapacity
   weeks: string[]
+  range: DateRange
   disabled: boolean
+  expanded: boolean
+  onToggle: (personId: number) => void
   index: number
-  measureRef: (row: HTMLTableRowElement | null) => void
+  measureRef: (group: HTMLTableSectionElement | null) => void
 }
 
-export function PersonRow({ person, weeks, disabled, index, measureRef }: Props) {
+// Each person is a tbody so the virtualiser can measure the whole group,
+// which grows when the project rows are open.
+export function PersonRow({
+  person,
+  weeks,
+  range,
+  disabled,
+  expanded,
+  onToggle,
+  index,
+  measureRef,
+}: Props) {
   const [draft, setDraft] = useState<string | null>(null)
   const [invalid, setInvalid] = useState(false)
   const save = useSaveWeeklyHours()
@@ -47,66 +63,80 @@ export function PersonRow({ person, weeks, disabled, index, measureRef }: Props)
   const hasError = invalid || save.isError
 
   return (
-    <tr ref={measureRef} data-index={index}>
-      <th scope="row" className="sticky-col" title={person.name}>
-        {person.name}
-      </th>
-      <td className="hours">
-        <span className="hours-field">
-          <input
-            type="number"
-            min={0}
-            max={MAX_WEEKLY_HOURS}
-            step="any"
-            aria-label={`Weekly hours for ${person.name}`}
-            aria-invalid={hasError}
-            aria-describedby={hasError ? errorId : undefined}
-            value={draft ?? formatHours(person.weeklyHours)}
-            disabled={disabled || save.isPending}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commit()
-              if (e.key === 'Escape') discard()
-            }}
-          />
-          {save.isPending && <span className="hours-status">Saving…</span>}
-          {invalid && (
-            <span id={errorId} role="alert" className="hours-status error">
-              0 to {MAX_WEEKLY_HOURS} only
-              <button type="button" className="link" onClick={discard}>
-                Discard
-              </button>
-            </span>
-          )}
-          {save.isError && !invalid && (
-            <SaveError
-              id={errorId}
-              message={`Not saved: ${save.error.message}. Still ${formatHours(person.weeklyHours)}h.`}
-              onRetry={commit}
-              onDiscard={discard}
-            />
-          )}
-        </span>
-      </td>
-      {weeks.map((week, i) => {
-        const allocated = person.allocated[i] ?? 0
-        const over = isOver(allocated, person.weeklyHours)
-        return (
-          <td
-            key={week}
-            className={over ? 'num over' : allocated === 0 ? 'num empty' : 'num'}
-            style={{ '--load': loadPercent(allocated, person.weeklyHours) } as CSSProperties}
-            title={`${formatHours(allocated)}h allocated of ${formatHours(person.weeklyHours)}h`}
+    <tbody ref={measureRef} data-index={index} className={expanded ? 'person expanded' : 'person'}>
+      <tr>
+        <th scope="row" className="sticky-col" title={person.name}>
+          <button
+            type="button"
+            className="expand"
+            aria-expanded={expanded}
+            aria-label={`Projects for ${person.name}`}
+            onClick={() => onToggle(person.id)}
           >
-            {formatHours(allocated)}
-            {over && (
-              <span className="over-by">+{formatHours(allocated - person.weeklyHours)} over</span>
+            <Icon name={expanded ? 'chevron-down' : 'chevron-right'} />
+          </button>
+          {person.name}
+        </th>
+        <td className="hours">
+          <span className="hours-field">
+            <input
+              type="number"
+              min={0}
+              max={MAX_WEEKLY_HOURS}
+              step="any"
+              aria-label={`Weekly hours for ${person.name}`}
+              aria-invalid={hasError}
+              aria-describedby={hasError ? errorId : undefined}
+              value={draft ?? formatHours(person.weeklyHours)}
+              disabled={disabled || save.isPending}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commit()
+                if (e.key === 'Escape') discard()
+              }}
+            />
+            {save.isPending && <span className="hours-status">Saving…</span>}
+            {invalid && (
+              <span id={errorId} role="alert" className="hours-status error">
+                0 to {MAX_WEEKLY_HOURS} only
+                <button type="button" className="link" onClick={discard}>
+                  Discard
+                </button>
+              </span>
             )}
-          </td>
-        )
-      })}
-    </tr>
+            {save.isError && !invalid && (
+              <SaveError
+                id={errorId}
+                message={`Not saved: ${save.error.message}. Still ${formatHours(person.weeklyHours)}h.`}
+                onRetry={commit}
+                onDiscard={discard}
+              />
+            )}
+          </span>
+        </td>
+        {weeks.map((week, i) => {
+          const allocated = person.allocated[i] ?? 0
+          const over = isOver(allocated, person.weeklyHours)
+          return (
+            <td
+              key={week}
+              className={over ? 'num over' : allocated === 0 ? 'num empty' : 'num'}
+              style={{ '--load': loadPercent(allocated, person.weeklyHours) } as CSSProperties}
+              title={`${formatHours(allocated)}h allocated of ${formatHours(person.weeklyHours)}h`}
+            >
+              {formatHours(allocated)}
+              {over && (
+                <span className="over-by">+{formatHours(allocated - person.weeklyHours)} over</span>
+              )}
+            </td>
+          )
+        })}
+      </tr>
+      {expanded && (
+        <ProjectRows personId={person.id} range={range} columnCount={weeks.length + 2} />
+      )}
+    </tbody>
   )
 }
 
