@@ -50,3 +50,43 @@ left unfinished. Append as you go; a line or two per entry is right.
 - First draft had handler, parsing and SQL in one `capacity.go`. Split into `capacity.go`
   (HTTP), `capacity_params.go` (range parsing) and `capacity_query.go` (SQL) so each can
   change on its own.
+
+## Grid
+
+- Cells show allocated hours. Over is `allocated > weeklyHours`, strict, worked out in the
+  browser from the two numbers. Over cells get colour plus a "+5 over" label so it does not
+  rely on colour alone. No percentages, so zero capacity (Eli) needs no special case.
+- First version used plain `useState`/`useEffect` with a hand-written abort, load-more merge
+  and rollback. Replaced it with TanStack Query: `useInfiniteQuery` for the paged range and
+  `useMutation` for the save. Less state to get wrong, and going back to a range you already
+  loaded is instant.
+- After an edit: optimistic. `onMutate` writes the new capacity into the cache, the PATCH
+  response confirms it, and nothing is refetched because allocation does not depend on
+  capacity. The patch goes to every cached range, not only the one on screen. On failure the
+  capacity goes back to the old value, the input keeps what was typed, and the row shows
+  "Not saved (reason). Still 40h." with Retry and Discard.
+- Hours inputs are disabled while any capacity fetch is running. That is how I avoid a fetch
+  that started before a save landing after it with the old capacity. Simpler than cancelling
+  queries in `onMutate`, at the cost of a short disabled moment during "Load more".
+- Refetch on window focus is off and data is fresh for 30s. Another manager's edit will not
+  show up until the range is reloaded.
+- Layout: `App.tsx` and `CapacityGrid.tsx` stay where the scaffold put them. Around them:
+  `api/` (fetch calls), `hooks/` (queries and the mutation), `components/` (row, range
+  controls), `utils/` (over rule, hours parsing, date maths), `types.ts`.
+- While a new range loads the old grid stays on screen, dimmed, instead of flashing empty.
+- Looked at it in the browser. People 1-5 show the same numbers as the API check above.
+  Set Ana to 30: her 29 Dec week turned over (+10), her 12 Jan week (30 of 30) did not, and
+  the count line went from 4 to 5. Stopped the api container and saved 40: error shown,
+  capacity stayed 30. Started it, pressed Retry: saved. Load more went 50 to 100. Database is
+  back to seed values.
+- Tests: `docker compose exec web npm test`. Covers the over rule, hours parsing, week
+  shifting, and the two edit paths (saved value recomputes over without a refetch, failed
+  save restores the old capacity and keeps the typed value).
+- Rough edges in this first working version:
+  - A range you have not visited starts again at the first 50 people.
+  - "N of 50 people shown are over capacity" only counts loaded people, not the whole team.
+  - A failed save says "request failed (502)" when the API is down. Honest but not friendly.
+  - The inline error makes the hours column wider while it shows.
+  - No holidays or time off, so 1 Jan counts as a normal working day.
+- Next, in this order while time allows: better error display, better styling, sort and
+  filter (server side, because people are paged), row virtualisation.
