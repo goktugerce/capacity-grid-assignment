@@ -3,9 +3,10 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { fetchCapacity, saveWeeklyHours } from '../api/capacity'
+import { fetchCapacity, fetchPersonAllocations, saveWeeklyHours } from '../api/capacity'
 import type { CapacityFilters, CapacityPage, DateRange, PersonCapacity } from '../types'
 
 const CAPACITY_KEY = ['capacity'] as const
@@ -17,6 +18,14 @@ export function useCapacity(range: DateRange, filters: CapacityFilters) {
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     placeholderData: keepPreviousData,
+  })
+}
+
+export function usePersonAllocations(personId: number, range: DateRange, enabled: boolean) {
+  return useQuery({
+    queryKey: ['allocations', personId, range],
+    queryFn: ({ signal }) => fetchPersonAllocations(personId, range, signal),
+    enabled,
   })
 }
 

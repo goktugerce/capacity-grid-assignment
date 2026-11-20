@@ -1,4 +1,4 @@
-import type { CapacityFilters, CapacityPage, DateRange } from '../types'
+import type { CapacityFilters, CapacityPage, DateRange, PersonAllocations } from '../types'
 
 const UNREACHABLE = 'the server is not responding'
 
@@ -31,9 +31,19 @@ export function fetchCapacity(
     to: range.to,
     q: filters.search,
     sort: filters.nameDescending ? '-name' : 'name',
+    over: String(filters.overOnly),
     offset: String(offset),
   })
   return request(`/api/capacity?${query}`, { signal })
+}
+
+export function fetchPersonAllocations(
+  personId: number,
+  range: DateRange,
+  signal?: AbortSignal,
+): Promise<PersonAllocations> {
+  const query = new URLSearchParams({ from: range.from, to: range.to })
+  return request(`/api/people/${personId}/allocations?${query}`, { signal })
 }
 
 export function saveWeeklyHours(
