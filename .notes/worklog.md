@@ -141,3 +141,32 @@ left unfinished. Append as you go; a line or two per entry is right.
 - Open items if there is time: per-project breakdown for a person (a
   `GET /api/people/{id}/allocations?from=&to=` loaded when a row is expanded, so the main
   payload does not grow by the number of projects), and a filter for people over capacity.
+
+## Third pass: over-capacity filter and project breakdown
+
+- `over=true` on `GET /api/capacity` returns only people who are over in at least one week of
+  the range. It is in the same query: a `scope` CTE picks whose assignments are read. Normally
+  that is one page of people. With the filter it is everyone matching the search, because who
+  is over is only known after summing, and paging happens after. It works with search and sort.
+- This path is the expensive one and I measured it: default 3 week range 0.3s against 0.006s,
+  2 year range 0.94s against 0.075s, on 500 people. It will not hold at a few thousand. The
+  fix is a weekly rollup table kept up to date on assignment writes, which would also make
+  "sort by most over" cheap.
+- Cross-checked the filter: it returns 41 people for the default range, and a separate query
+  written from scratch in psql also gives 41.
+- With the filter on, the badge is the team-wide count from the server. With it off, the badge
+  only counts loaded rows and says so.
+- `GET /api/people/{id}/allocations?from=&to=` gives hours per project per week for one person,
+  counted the same way (clipped to the range, weekdays only). Fetched when a row is opened, so
+  the main payload does not grow by the number of projects.
+- The weekday expansion is now written in two queries. I left the duplication: the frozen
+  schema rules out a view or SQL function, and building SQL from Go strings is worse.
+- An unknown person id returns an empty project list, not a 404. The id always comes from a
+  row that was just rendered.
+- Each person is now a `<tbody>` so the virtualiser can measure a group that grows when its
+  project rows open. Which rows are open is kept in the grid, so it survives scrolling away,
+  changing the range, and switching the filter.
+- Checked in the browser: Dee's projects are Atlas 30 + Corvus 15 = 45 in the 5 Jan week and
+  Beacon 40 the week after, matching her totals. Cem's add up too.
+- Not done: tests for the two new SQL paths (they need a database), editing assignments, and
+  a phone-width check.
