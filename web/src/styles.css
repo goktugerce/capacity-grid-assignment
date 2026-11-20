@@ -64,6 +64,17 @@ td {
   opacity: 0.5;
 }
 
+/* Collapsed borders do not travel with sticky cells, so rows show through the header edge. */
+.grid {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.grid th,
+.grid td {
+  border-width: 0 1px 1px 0;
+}
+
 .grid thead th {
   position: sticky;
   top: 0;
@@ -103,6 +114,38 @@ td {
 .over-by {
   font-size: 0.8rem;
   font-weight: 500;
+}
+
+/* Fixed column widths: with virtualised rows, auto-sized columns would shift while scrolling. */
+.grid .sticky-col {
+  min-width: 14rem;
+}
+
+.grid .hours {
+  min-width: 13rem;
+  max-width: 13rem;
+  white-space: normal;
+}
+
+.grid .num {
+  min-width: 6.5rem;
+}
+
+.grid-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sort {
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 .hours input {

@@ -7,9 +7,11 @@ type Props = {
   person: PersonCapacity
   weeks: string[]
   disabled: boolean
+  index: number
+  measureRef: (row: HTMLTableRowElement | null) => void
 }
 
-export function PersonRow({ person, weeks, disabled }: Props) {
+export function PersonRow({ person, weeks, disabled, index, measureRef }: Props) {
   const [draft, setDraft] = useState<string | null>(null)
   const [invalid, setInvalid] = useState(false)
   const save = useSaveWeeklyHours()
@@ -38,12 +40,12 @@ export function PersonRow({ person, weeks, disabled }: Props) {
   const error = invalid
     ? `Enter a number from 0 to ${MAX_WEEKLY_HOURS}.`
     : save.isError
-      ? `Not saved (${save.error.message}). Still ${formatHours(person.weeklyHours)}h.`
+      ? `Not saved: ${save.error.message}. Still ${formatHours(person.weeklyHours)}h.`
       : ''
   const errorId = `hours-error-${person.id}`
 
   return (
-    <tr>
+    <tr ref={measureRef} data-index={index}>
       <th scope="row" className="sticky-col">
         {person.name}
       </th>

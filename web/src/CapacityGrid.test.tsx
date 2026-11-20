@@ -1,9 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { CapacityGrid } from './CapacityGrid'
 
 describe('editing weekly hours', () => {
+  // jsdom has no layout, so the row virtualiser would see a 0px viewport and render nothing.
+  beforeAll(() => {
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 800 })
+  })
+
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
@@ -58,7 +63,7 @@ describe('editing weekly hours', () => {
     await editHours('48')
 
     const alert = await screen.findByRole('alert')
-    expect(alert.textContent).toContain('Not saved (could not save weekly hours). Still 40h.')
+    expect(alert.textContent).toContain('Not saved: could not save weekly hours. Still 40h.')
     expect(screen.getByText('+5 over')).toBeTruthy()
     expect(screen.getByLabelText<HTMLInputElement>('Weekly hours for Dee Okafor').value).toBe('48')
   })
