@@ -24,3 +24,29 @@ left unfinished. Append as you go; a line or two per entry is right.
   - Eli: `weekly_hours = 0` with 20h allocated. Any allocated/capacity ratio divides by zero.
 - `weekly_hours` is one current value per person. No history, no team or manager table,
   no holidays, no version column.
+
+## API
+
+- Weekdays only. Allocation is `hours_per_day` for each Mon-Fri an assignment covers.
+  Toggl's own capacity view does not count weekends either. No holidays in the data.
+- Ranges snap outwards to whole Mon-Sun weeks. A partial week shown against a full week of
+  capacity would understate load. Weeks are keyed by their Monday date, not a week number,
+  so the year boundary is not a special case.
+- Response is `{ weeks, people: [{ id, name, weeklyHours, allocated[] }], total, nextOffset }`.
+  `allocated` lines up with `weeks` by index. No "over" flag from the server: allocation does
+  not depend on capacity, so a capacity edit cannot make `allocated` stale.
+- People are paged (50 default, 200 max, name order, limit/offset). Range capped at 106 weeks.
+- Checked people 1-5 by hand against the API and against the rows in the database for the
+  default range: Ana 40/0/30, Bo 0/32/8, Cem 0/4/12, Dee 0/45/40, Eli 0/20/0. All match.
+- Query plan for 50 people over 2 years: seq scan on assignments, hash join to the page.
+  Fine on this seed. At a few thousand people I'd expect the `person_id` index to win, not
+  measured.
+- `PATCH /api/people/{id}` takes `{ "weeklyHours": n }`, 0-168, returns the saved person.
+  422 for a bad value, 400 for a bad body, 404 for an unknown id. Unknown fields rejected.
+- Editing `weekly_hours` changes capacity for every week, past ones too. The schema has one
+  value per person and is frozen. Last write wins, no version column to detect a clash.
+- Go tests run with `docker run --rm -v "$PWD/api":/src -w /src golang:1.26-alpine go test ./...`.
+  The api image only ships the binary, so there is no compose command for them.
+- First draft had handler, parsing and SQL in one `capacity.go`. Split into `capacity.go`
+  (HTTP), `capacity_params.go` (range parsing) and `capacity_query.go` (SQL) so each can
+  change on its own.
