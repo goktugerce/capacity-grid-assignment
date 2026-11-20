@@ -90,3 +90,27 @@ left unfinished. Append as you go; a line or two per entry is right.
   - No holidays or time off, so 1 Jan counts as a normal working day.
 - Next, in this order while time allows: better error display, better styling, sort and
   filter (server side, because people are paged), row virtualisation.
+
+## Second pass: search, sort, errors, virtualisation
+
+- Search and sort are server side (`q`, `sort=name|-name`) because people are paged. Doing
+  them in the browser would only cover the rows already loaded. Both run before any
+  assignment is read, so the cheap path stays cheap. Search is a case-insensitive substring
+  on the name, no index. At a few thousand people that needs `pg_trgm` or a prefix match.
+- Left out on purpose: "only people over capacity" and "sort by most over". Those need
+  allocation worked out for everyone before paging, which is the expensive direction. I
+  would do it from a weekly rollup table, not from raw assignments on every request.
+- Rows are virtualised with TanStack Virtual: 500 people loaded, about 40 rows in the DOM.
+  Columns are not virtualised, so a 2 year range still renders about 100 cells per visible row.
+- Trade-off of virtualising: a row's draft and its "Not saved" message live in the row. If
+  you scroll far enough for the row to unmount, they are gone. The saved value is safe.
+- Errors: a network failure or a 502-504 now reads "the server is not responding". Other
+  errors show the message the API sent.
+- Caught in the browser with the api container stopped: a failed load of a range or search
+  that was not cached removed the whole grid, search box included, so the only way out was
+  "Try again". The search box and error now stay on screen.
+- Caught in the browser: with a sticky header and collapsed borders, rows showed through the
+  header's edge. Switched the grid to separate borders.
+- Checked: search "lindq" gives 9 people, sort flips the order, "zzzz" gives an empty state,
+  Load more to 500 then scrolling keeps about 40 rows mounted.
+- Still to do: styling.
