@@ -43,6 +43,7 @@ func TestParseCapacityParamsRejectsBadInput(t *testing.T) {
 		"limit too big":   {"from": {"2026-01-05"}, "to": {"2026-01-09"}, "limit": {"100000"}},
 		"negative offset": {"from": {"2026-01-05"}, "to": {"2026-01-09"}, "offset": {"-1"}},
 		"unknown sort":    {"from": {"2026-01-05"}, "to": {"2026-01-09"}, "sort": {"hours"}},
+		"bad over flag":   {"from": {"2026-01-05"}, "to": {"2026-01-09"}, "over": {"yes"}},
 	}
 	for name, q := range tests {
 		t.Run(name, func(t *testing.T) {

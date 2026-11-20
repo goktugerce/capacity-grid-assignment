@@ -23,6 +23,7 @@ type capacityParams struct {
 	offset   int
 	search   string
 	nameDesc bool
+	overOnly bool
 }
 
 // parseCapacityParams snaps the requested range outwards to whole
@@ -70,6 +71,13 @@ func parseCapacityParams(q url.Values) (capacityParams, error) {
 		p.nameDesc = true
 	default:
 		return capacityParams{}, errors.New("sort must be name or -name")
+	}
+	switch q.Get("over") {
+	case "", "false":
+	case "true":
+		p.overOnly = true
+	default:
+		return capacityParams{}, errors.New("over must be true or false")
 	}
 	return p, nil
 }
