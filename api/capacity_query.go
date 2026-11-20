@@ -6,13 +6,24 @@ import (
 )
 
 // capacityQuery returns one page of people with allocated hours per week.
-// Assignments are clipped to the range before being expanded into days, and
-// only weekdays count. Weeks with no allocation produce no row.
+// People are filtered and paged before any assignment is read. Assignments
+// are clipped to the range before being expanded into days, and only weekdays
+// count. Weeks with no allocation produce no row.
 const capacityQuery = `
-WITH page AS (
+WITH matched AS (
   SELECT id, name, weekly_hours
   FROM people
-  ORDER BY name, id
+  WHERE $5::text = '' OR position(lower($5::text) IN lower(name)) > 0
+),
+page AS (
+  SELECT id, name, weekly_hours,
+         row_number() OVER (
+           ORDER BY CASE WHEN $6::bool THEN name END DESC,
+                    CASE WHEN NOT $6::bool THEN name END ASC,
+                    id
+         ) AS pos
+  FROM matched
+  ORDER BY pos
   LIMIT $3 OFFSET $4
 ),
 alloc AS (
@@ -36,10 +47,10 @@ SELECT page.id,
        page.weekly_hours::float8,
        alloc.week_start,
        alloc.hours::float8,
-       (SELECT count(*) FROM people) AS total
+       (SELECT count(*) FROM matched) AS total
 FROM page
 LEFT JOIN alloc ON alloc.person_id = page.id
-ORDER BY page.name, page.id, alloc.week_start`
+ORDER BY page.pos, alloc.week_start`
 
 func (s *server) queryCapacity(ctx context.Context, p capacityParams) (capacityResponse, error) {
 	weeks := p.weeks()
@@ -53,7 +64,7 @@ func (s *server) queryCapacity(ctx context.Context, p capacityParams) (capacityR
 		weekIndex[resp.Weeks[i]] = i
 	}
 
-	rows, err := s.db.Query(ctx, capacityQuery, p.from, p.to, p.limit, p.offset)
+	rows, err := s.db.Query(ctx, capacityQuery, p.from, p.to, p.limit, p.offset, p.search, p.nameDesc)
 	if err != nil {
 		return capacityResponse{}, err
 	}

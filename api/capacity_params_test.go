@@ -42,6 +42,7 @@ func TestParseCapacityParamsRejectsBadInput(t *testing.T) {
 		"range too wide":  {"from": {"2020-01-01"}, "to": {"2026-01-01"}},
 		"limit too big":   {"from": {"2026-01-05"}, "to": {"2026-01-09"}, "limit": {"100000"}},
 		"negative offset": {"from": {"2026-01-05"}, "to": {"2026-01-09"}, "offset": {"-1"}},
+		"unknown sort":    {"from": {"2026-01-05"}, "to": {"2026-01-09"}, "sort": {"hours"}},
 	}
 	for name, q := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -49,5 +50,20 @@ func TestParseCapacityParamsRejectsBadInput(t *testing.T) {
 				t.Error("expected an error, got none")
 			}
 		})
+	}
+}
+
+func TestParseCapacityParamsSearchAndSort(t *testing.T) {
+	p, err := parseCapacityParams(url.Values{
+		"from": {"2026-01-05"}, "to": {"2026-01-09"}, "q": {"  ana "}, "sort": {"-name"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.search != "ana" {
+		t.Errorf("search = %q, want %q", p.search, "ana")
+	}
+	if !p.nameDesc {
+		t.Error("sort=-name should set nameDesc")
 	}
 }

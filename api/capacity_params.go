@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -13,12 +14,15 @@ const (
 	defaultLimit = 50
 	maxLimit     = 200
 	maxWeeks     = 106
+	maxSearchLen = 100
 )
 
 type capacityParams struct {
 	from, to time.Time
 	limit    int
 	offset   int
+	search   string
+	nameDesc bool
 }
 
 // parseCapacityParams snaps the requested range outwards to whole
@@ -54,6 +58,18 @@ func parseCapacityParams(q url.Values) (capacityParams, error) {
 		if p.offset, err = strconv.Atoi(v); err != nil || p.offset < 0 {
 			return capacityParams{}, errors.New("offset must be 0 or more")
 		}
+	}
+
+	p.search = strings.TrimSpace(q.Get("q"))
+	if len(p.search) > maxSearchLen {
+		return capacityParams{}, fmt.Errorf("q must be at most %d characters", maxSearchLen)
+	}
+	switch q.Get("sort") {
+	case "", "name":
+	case "-name":
+		p.nameDesc = true
+	default:
+		return capacityParams{}, errors.New("sort must be name or -name")
 	}
 	return p, nil
 }
