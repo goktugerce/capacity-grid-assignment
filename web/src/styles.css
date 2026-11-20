@@ -14,8 +14,11 @@ h1 {
 }
 
 .range {
-  margin: 0 0 1.5rem;
-  opacity: 0.6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -29,4 +32,93 @@ td {
   border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
   padding: 0.5rem 0.75rem;
   text-align: left;
+}
+
+:root {
+  --over-bg: light-dark(#fde2e1, #5c1a1a);
+  --over-fg: light-dark(#8f1d18, #ffc9c5);
+  --error-fg: light-dark(#a3231c, #ff9d96);
+  --surface: light-dark(#fff, #1c1c1c);
+}
+
+.hint {
+  opacity: 0.65;
+  font-size: 0.85rem;
+}
+
+.summary,
+.paging {
+  margin: 0.75rem 0;
+}
+
+.error {
+  color: var(--error-fg);
+}
+
+.grid-scroll {
+  overflow: auto;
+  max-height: 70vh;
+}
+
+.grid-scroll.stale {
+  opacity: 0.5;
+}
+
+.grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+.grid .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.grid thead .sticky-col {
+  z-index: 3;
+}
+
+.grid .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.grid .empty {
+  opacity: 0.4;
+}
+
+.grid .over {
+  background: var(--over-bg);
+  color: var(--over-fg);
+  font-weight: 700;
+}
+
+.over-by {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.hours input {
+  width: 5rem;
+  font: inherit;
+  text-align: right;
+}
+
+.hours input[aria-invalid='true'] {
+  outline: 2px solid var(--error-fg);
+}
+
+.hours .hint,
+.hours .error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  max-width: 16rem;
 }
