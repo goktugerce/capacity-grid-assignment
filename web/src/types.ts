@@ -16,3 +16,8 @@ export type DateRange = {
   from: string
   to: string
 }
+
+export type CapacityFilters = {
+  search: string
+  nameDescending: boolean
+}

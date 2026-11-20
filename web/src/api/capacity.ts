@@ -1,34 +1,48 @@
-import type { CapacityPage } from '../types'
+import type { CapacityFilters, CapacityPage, DateRange } from '../types'
 
-async function readError(res: Response): Promise<string> {
+const UNREACHABLE = 'the server is not responding'
+
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  let res: Response
+  try {
+    res = await fetch(url, init)
+  } catch (err) {
+    if (init?.signal?.aborted) throw err
+    throw new Error(UNREACHABLE)
+  }
+  if (res.ok) return res.json()
+  if (res.status >= 502) throw new Error(UNREACHABLE)
+
   const body: unknown = await res.json().catch(() => null)
   if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') {
-    return body.error
+    throw new Error(body.error)
   }
-  return `request failed (${res.status})`
+  throw new Error(`request failed (${res.status})`)
 }
 
-export async function fetchCapacity(
-  from: string,
-  to: string,
+export function fetchCapacity(
+  range: DateRange,
+  filters: CapacityFilters,
   offset: number,
   signal?: AbortSignal,
 ): Promise<CapacityPage> {
-  const query = new URLSearchParams({ from, to, offset: String(offset) })
-  const res = await fetch(`/api/capacity?${query}`, { signal })
-  if (!res.ok) throw new Error(await readError(res))
-  return res.json()
+  const query = new URLSearchParams({
+    from: range.from,
+    to: range.to,
+    q: filters.search,
+    sort: filters.nameDescending ? '-name' : 'name',
+    offset: String(offset),
+  })
+  return request(`/api/capacity?${query}`, { signal })
 }
 
-export async function saveWeeklyHours(
+export function saveWeeklyHours(
   id: number,
   weeklyHours: number,
 ): Promise<{ id: number; weeklyHours: number }> {
-  const res = await fetch(`/api/people/${id}`, {
+  return request(`/api/people/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ weeklyHours }),
   })
-  if (!res.ok) throw new Error(await readError(res))
-  return res.json()
 }

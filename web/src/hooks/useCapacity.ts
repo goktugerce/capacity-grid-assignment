@@ -6,14 +6,14 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { fetchCapacity, saveWeeklyHours } from '../api/capacity'
-import type { CapacityPage, PersonCapacity } from '../types'
+import type { CapacityFilters, CapacityPage, DateRange, PersonCapacity } from '../types'
 
 const CAPACITY_KEY = ['capacity'] as const
 
-export function useCapacity(from: string, to: string) {
+export function useCapacity(range: DateRange, filters: CapacityFilters) {
   return useInfiniteQuery({
-    queryKey: [...CAPACITY_KEY, from, to],
-    queryFn: ({ pageParam, signal }) => fetchCapacity(from, to, pageParam, signal),
+    queryKey: [...CAPACITY_KEY, range, filters],
+    queryFn: ({ pageParam, signal }) => fetchCapacity(range, filters, pageParam, signal),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     placeholderData: keepPreviousData,
